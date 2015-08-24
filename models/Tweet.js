@@ -1,0 +1,28 @@
+var mongoose = require('mongoose');
+
+var schema = new mongoose.Schema({
+	twid       : String
+  , active     : Boolean
+  , author     : String
+  , avatar     : String
+  , body       : String
+  , date       : Date
+  , screenname : String
+});
+
+schema.statics.getTweets = function(page, skip, callback){
+	var tweets = [];
+	var start = (page * 10) + (skip);
+	Tweet.find({},'twid active author avatar body date screenname',{skip: start, limit: 10}).sort({date: 'desc'}).exec(function(err,data){
+		console.log('executing fetch...')
+		if(!err){
+			tweets = data;
+			tweets.forEach(function(tweet){
+				tweet.active = true;
+			})
+		}
+		callback(tweets);
+	});
+}
+
+module.exports = Tweet = mongoose.model('Tweet',schema);
