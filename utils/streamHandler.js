@@ -15,17 +15,17 @@ module.exports = function(stream, io){
       date: data['created_at'],
       screenname: data['user']['screen_name']
     };
+    io.emit('tweet', tweet);
+    // // Create a new model instance with our object
+    // var tweetEntry = new Tweet(tweet);
 
-    // Create a new model instance with our object
-    var tweetEntry = new Tweet(tweet);
-
-    // Save 'er to the database
-    tweetEntry.save(function(err) {
-      if (!err) {
-        // If everything is cool, socket.io emits the tweet.
-        io.emit('tweet', tweet);
-      }
-    });
+    // // Save 'er to the database
+    // tweetEntry.save(function(err) {
+    //   if (!err) {
+    //     // If everything is cool, socket.io emits the tweet.
+    //     io.emit('tweet', tweet);
+    //   }
+    // });
 
   });
 

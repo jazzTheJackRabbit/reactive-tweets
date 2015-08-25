@@ -19,6 +19,7 @@ module.exports = TweetsApp = React.createClass({
 
 	showNewTweets: function(){		
 		var tweets = this.state.tweets;
+		
 		tweets.forEach(function(tweet){
 			tweet.active = true;
 		});
@@ -31,42 +32,49 @@ module.exports = TweetsApp = React.createClass({
 
 	checkWindowScroll: function(e){
 	    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-	    	console.log("trying to get more tweets:");
-	        this.loadMoreTweetsAtTheBottom();
+	    	if(!this.state.done){
+				this.setState({
+					paging: true
+				});
+				this.loadMoreTweetsAtTheBottom();
+			}			        
 	    }
 	},
 
 	loadMoreTweetsAtTheBottom: function(){
 		// Get tweets
 		var request = new XMLHttpRequest();
-		request.open('GET','pages/' + this.state.page + '/' + this.state.skip, true);
-		request.addEventListener('load', this.showOldTweets.bind(this));
-		request.oldSelf = this;
-		request.send();	
+		request.open('GET','pages/' + (this.state.page + 1) + '/' + this.state.skip, true);
+		request.addEventListener('load', showOldTweets);
+		request.send();			
 	},
 
 	showOldTweets: function(e){
 		var request = e.target;
-		var self = request.oldSelf;
 		if(request.status >= 200 && request.status < 400){
-			var page = this.state.tweets.length / 10;
-			var skip = this.state.tweets.length % 10;
+			var page = this.state.page + 1;
+			var skip = this.state.skip;
 			var tweets = this.state.tweets;
-			tweets.push(JSON.parse(request.responseText));
 
-			this.setState({
-				paging: true,
-				page: page,
-				skip: skip,
-				tweets: tweets
-			});
-		}
-		else{
-			this.setState({
-				paging: false,
-				done: true
-			})
-		}
+			var oldTweets = JSON.parse(request.responseText);			
+
+			if(oldTweets.length){			
+				tweets = tweets.concat(oldTweets);
+				console.log(tweets);
+				this.setState({
+					paging: false,
+					page: page,
+					skip: skip,
+					tweets: tweets
+				});
+			}	
+			else{
+				this.setState({				
+					paging: false,
+					done: true
+				})
+			}		
+		}		
 	},
 
 	componentDidMount: function(){
@@ -74,7 +82,6 @@ module.exports = TweetsApp = React.createClass({
 		socket.on('tweet', function(tweet){
 			this.addNewTweet(tweet);
 		}.bind(this));
-
 		window.addEventListener('scroll', this.checkWindowScroll);
 	},
 
@@ -93,7 +100,7 @@ module.exports = TweetsApp = React.createClass({
 	render: function(){
 		return(
 			<div className="tweet-app">
-				<Tweets tweets={this.props.tweets}/>
+				<Tweets tweets={this.state.tweets}/>
 				<NotificationBar showNewTweets={this.showNewTweets} count={this.state.count}/>
 				<Loader paging={this.state.paging}/>
 			</div>

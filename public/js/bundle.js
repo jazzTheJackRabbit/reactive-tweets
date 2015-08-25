@@ -100,6 +100,7 @@ module.exports = TweetsApp = React.createClass({displayName: "TweetsApp",
 
 	showNewTweets: function(){		
 		var tweets = this.state.tweets;
+		
 		tweets.forEach(function(tweet){
 			tweet.active = true;
 		});
@@ -112,38 +113,75 @@ module.exports = TweetsApp = React.createClass({displayName: "TweetsApp",
 
 	checkWindowScroll: function(e){
 	    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
-	    	console.log("trying to get more tweets:");
-	        this.loadMoreTweetsAtTheBottom();
+	    	if(!this.state.done){
+				this.setState({
+					paging: true
+				});
+				this.loadMoreTweetsAtTheBottom();
+			}			        
 	    }
 	},
 
 	loadMoreTweetsAtTheBottom: function(){
 		// Get tweets
 		var request = new XMLHttpRequest();
-		request.open('GET','pages/' + this.state.page + '/' + this.state.skip, true);
-		request.addEventListener('load', this.showOldTweets.bind(this));
-		request.oldSelf = this;
-		request.send();	
+		request.open('GET','pages/' + (this.state.page + 1) + '/' + this.state.skip, true);
+		request.addEventListener('load', function(){
+			if(request.status >= 200 && request.status < 400){
+				var page = this.state.page + 1;
+				var skip = this.state.skip;
+				var tweets = this.state.tweets;
+
+				var oldTweets = JSON.parse(request.responseText);			
+
+				if(oldTweets.length){			
+					tweets = tweets.concat(oldTweets);
+					console.log(tweets);
+					this.setState({
+						paging: false,
+						page: page,
+						skip: skip,
+						tweets: tweets
+					});
+				}	
+				else{
+					console.log("done")
+					this.setState({				
+						paging: false,
+						done: true
+					})
+				}		
+
+			}			
+		}.bind(this));
+
+		request.send();			
 	},
 
 	showOldTweets: function(e){
 		var request = e.target;
-		var self = request.oldSelf;
 		if(request.status >= 200 && request.status < 400){
-			var page = this.state.tweets.length / 10;
-			var skip = this.state.tweets.length % 10;
+			var page = this.state.page + 1;
+			var skip = this.state.skip;
 			var tweets = this.state.tweets;
-			tweets.push(JSON.parse(request.responseText));
 
-			this.setState({
-				paging: true,
-				page: page,
-				skip: skip,
-				tweets: tweets
-			});
+			var oldTweets = JSON.parse(request.responseText);			
+			console.log(oldTweets.length);
+
+			if(oldTweets.length){			
+				console.log("replacing old tweets")
+				// tweets.push(oldTweets);
+				this.setState({
+					paging: false,
+					page: page,
+					skip: skip,
+					tweets: []
+				});
+			}			
 		}
 		else{
-			this.setState({
+			console.log("done")
+			this.setState({				
 				paging: false,
 				done: true
 			})
@@ -155,7 +193,6 @@ module.exports = TweetsApp = React.createClass({displayName: "TweetsApp",
 		socket.on('tweet', function(tweet){
 			this.addNewTweet(tweet);
 		}.bind(this));
-
 		window.addEventListener('scroll', this.checkWindowScroll);
 	},
 
@@ -174,7 +211,7 @@ module.exports = TweetsApp = React.createClass({displayName: "TweetsApp",
 	render: function(){
 		return(
 			React.createElement("div", {className: "tweet-app"}, 
-				React.createElement(Tweets, {tweets: this.props.tweets}), 
+				React.createElement(Tweets, {tweets: this.state.tweets}), 
 				React.createElement(NotificationBar, {showNewTweets: this.showNewTweets, count: this.state.count}), 
 				React.createElement(Loader, {paging: this.state.paging})
 			)
