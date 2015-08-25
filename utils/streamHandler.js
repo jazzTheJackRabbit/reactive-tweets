@@ -21,10 +21,10 @@ module.exports = function(stream, io){
 
     // Save 'er to the database
     tweetEntry.save(function(err) {
-      // if (!err) {
-      //   // If everything is cool, socket.io emits the tweet.
-      //   io.emit('tweet', tweet);
-      // }
+      if (!err) {
+        // If everything is cool, socket.io emits the tweet.
+        io.emit('tweet', tweet);
+      }
     });
 
   });
