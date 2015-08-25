@@ -113,12 +113,14 @@ module.exports = TweetsApp = React.createClass({displayName: "TweetsApp",
 
 	checkWindowScroll: function(e){
 	    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+	    	if(this.state.paging){
+				this.loadMoreTweetsAtTheBottom();
+			}
 	    	if(!this.state.done){
 				this.setState({
 					paging: true
-				});
-				this.loadMoreTweetsAtTheBottom();
-			}			        
+				});				
+			}			
 	    }
 	},
 
@@ -126,36 +128,8 @@ module.exports = TweetsApp = React.createClass({displayName: "TweetsApp",
 		// Get tweets
 		var request = new XMLHttpRequest();
 		request.open('GET','pages/' + (this.state.page + 1) + '/' + this.state.skip, true);
-		request.addEventListener('load', function(){
-			if(request.status >= 200 && request.status < 400){
-				var page = this.state.page + 1;
-				var skip = this.state.skip;
-				var tweets = this.state.tweets;
-
-				var oldTweets = JSON.parse(request.responseText);			
-
-				if(oldTweets.length){			
-					tweets = tweets.concat(oldTweets);
-					console.log(tweets);
-					this.setState({
-						paging: false,
-						page: page,
-						skip: skip,
-						tweets: tweets
-					});
-				}	
-				else{
-					console.log("done")
-					this.setState({				
-						paging: false,
-						done: true
-					})
-				}		
-
-			}			
-		}.bind(this));
-
-		request.send();			
+		request.addEventListener('load', this.showOldTweets);
+		request.send();				
 	},
 
 	showOldTweets: function(e){
@@ -166,26 +140,30 @@ module.exports = TweetsApp = React.createClass({displayName: "TweetsApp",
 			var tweets = this.state.tweets;
 
 			var oldTweets = JSON.parse(request.responseText);			
-			console.log(oldTweets.length);
 
 			if(oldTweets.length){			
-				console.log("replacing old tweets")
-				// tweets.push(oldTweets);
+				tweets = tweets.concat(oldTweets);
+				console.log(tweets);
 				this.setState({
 					paging: false,
 					page: page,
 					skip: skip,
-					tweets: []
+					tweets: tweets
 				});
-			}			
+			}	
+			else{
+				this.setState({				
+					paging: false,
+					done: true
+				})
+			}		
 		}
 		else{
-			console.log("done")
-			this.setState({				
-				paging: false,
-				done: true
-			})
-		}
+				this.setState({				
+					paging: false,
+					done: true
+				})
+			}		
 	},
 
 	componentDidMount: function(){

@@ -32,12 +32,14 @@ module.exports = TweetsApp = React.createClass({
 
 	checkWindowScroll: function(e){
 	    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+	    	if(this.state.paging){
+				this.loadMoreTweetsAtTheBottom();
+			}
 	    	if(!this.state.done){
 				this.setState({
 					paging: true
-				});
-				this.loadMoreTweetsAtTheBottom();
-			}			        
+				});				
+			}			
 	    }
 	},
 
@@ -45,8 +47,8 @@ module.exports = TweetsApp = React.createClass({
 		// Get tweets
 		var request = new XMLHttpRequest();
 		request.open('GET','pages/' + (this.state.page + 1) + '/' + this.state.skip, true);
-		request.addEventListener('load', showOldTweets);
-		request.send();			
+		request.addEventListener('load', this.showOldTweets);
+		request.send();				
 	},
 
 	showOldTweets: function(e){
@@ -74,7 +76,13 @@ module.exports = TweetsApp = React.createClass({
 					done: true
 				})
 			}		
-		}		
+		}
+		else{
+				this.setState({				
+					paging: false,
+					done: true
+				})
+			}		
 	},
 
 	componentDidMount: function(){
