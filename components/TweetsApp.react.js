@@ -1,6 +1,7 @@
-var React = require('react')
-var Tweets = require('./Tweets.react')
-var NotificationBar = require('./NotificationBar.react')
+var React = require('react');
+var Tweets = require('./Tweets.react');
+var NotificationBar = require('./NotificationBar.react');
+var Loader = require('./Loader.react');
 
 module.exports = TweetsApp = React.createClass({
 	addNewTweet: function(tweet){
@@ -22,12 +23,50 @@ module.exports = TweetsApp = React.createClass({
 			tweet.active = true;
 		});
 
-		var count = 0;
-
 		this.setState({
 			tweets: tweets,
-			count: count
+			count: 0
 		})
+	},
+
+	checkWindowScroll: function(e){
+	    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+	    	console.log("trying to get more tweets:");
+	        this.loadMoreTweetsAtTheBottom();
+	    }
+	},
+
+	loadMoreTweetsAtTheBottom: function(){
+		// Get tweets
+		var request = new XMLHttpRequest();
+		request.open('GET','pages/' + this.state.page + '/' + this.state.skip, true);
+		request.addEventListener('load', this.showOldTweets.bind(this));
+		request.oldSelf = this;
+		request.send();	
+	},
+
+	showOldTweets: function(e){
+		var request = e.target;
+		var self = request.oldSelf;
+		if(request.status >= 200 && request.status < 400){
+			var page = this.state.tweets.length / 10;
+			var skip = this.state.tweets.length % 10;
+			var tweets = this.state.tweets;
+			tweets.push(JSON.parse(request.responseText));
+
+			this.setState({
+				paging: true,
+				page: page,
+				skip: skip,
+				tweets: tweets
+			});
+		}
+		else{
+			this.setState({
+				paging: false,
+				done: true
+			})
+		}
 	},
 
 	componentDidMount: function(){
@@ -35,6 +74,8 @@ module.exports = TweetsApp = React.createClass({
 		socket.on('tweet', function(tweet){
 			this.addNewTweet(tweet);
 		}.bind(this));
+
+		window.addEventListener('scroll', this.checkWindowScroll);
 	},
 
 	getInitialState: function(props){
@@ -54,6 +95,7 @@ module.exports = TweetsApp = React.createClass({
 			<div className="tweet-app">
 				<Tweets tweets={this.props.tweets}/>
 				<NotificationBar showNewTweets={this.showNewTweets} count={this.state.count}/>
+				<Loader paging={this.state.paging}/>
 			</div>
 		);
 	}

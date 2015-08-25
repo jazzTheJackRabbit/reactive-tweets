@@ -16,6 +16,9 @@ module.exports = {
 	},
 
 	pages: function(req,res){
-
+		console.log('running pages')
+		Tweet.getTweets(req.params.page, req.params.skip, function(tweets){
+			res.send(tweets);
+		});
 	}
 }
